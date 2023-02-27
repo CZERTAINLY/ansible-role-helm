@@ -11,5 +11,5 @@ The role is designed for [Debian GNU/Linux](https://debian.org).
   connection: local
 
   roles:
-    - role: http_proxy
+    - role: helm
 ```
