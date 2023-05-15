@@ -2,3 +2,7 @@
 - name: install helm
   include: helm.yml
   tags: helm
+
+- name: install helm
+  include: helm_diff.yml
+  tags: helm, helm_diff
