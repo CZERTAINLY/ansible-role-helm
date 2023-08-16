@@ -35,3 +35,15 @@
   when: not ansible_check_mode # will fail in check mode if db isn't present
   tags:
     - helm_install
+
+- name: configure bash autompletion for helm for all users
+  ansible.builtin.copy:
+    content: '#!/bin/bash
+
+source <(helm completion bash)'
+    dest: /etc/profile.d/helm.sh
+    owner: root
+    group: root
+    mode: '0755'
+  tags:
+    - helm_bashrc
