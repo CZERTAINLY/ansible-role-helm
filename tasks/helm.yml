@@ -5,7 +5,7 @@
       - apt-transport-https
       - gpg
     state: latest
-    update_cache: no
+    update_cache: false
     cache_valid_time: 86400
   tags:
     - helm_packages
@@ -22,7 +22,9 @@
 
 - name: add heml packages repository
   ansible.builtin.apt_repository:
-    repo: deb [signed-by=/usr/share/keyrings/helm.asc] https://baltocdn.com/helm/stable/debian/ all main
+    repo: >-
+      deb [signed-by=/usr/share/keyrings/helm.asc]
+      https://baltocdn.com/helm/stable/debian/ all main
     state: present
   tags:
     - helm_repository
@@ -32,7 +34,8 @@
     name: helm
     state: latest
     cache_valid_time: 86400
-  when: not ansible_check_mode # will fail in check mode if db isn't present
+  # will fail in check mode if db isn't present
+  when: not ansible_check_mode
   tags:
     - helm_install
 
