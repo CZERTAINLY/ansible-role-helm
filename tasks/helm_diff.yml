@@ -1,6 +1,6 @@
 ---
 - name: Check if helm diff plugin is present
-  ansible.builtin.shell: helm plugin list 2>/dev/null |grep ^diff
+  ansible.builtin.shell: set -o pipefail && helm plugin list 2>/dev/null |grep ^diff
   register: helm_diff_plugin
   changed_when: false
   failed_when: "helm_diff_plugin.rc not in [ 0, 1 ]"
