@@ -12,5 +12,5 @@
 - name: Install helm diff
   ansible.builtin.command: helm plugin install https://github.com/databus23/helm-diff
   register: output
-  changed_when: output.rc != 0
+  changed_when: output.rc == 0 # install fails when plugin is already installed
   when: not ansible_check_mode and helm_diff_plugin.rc != 0
