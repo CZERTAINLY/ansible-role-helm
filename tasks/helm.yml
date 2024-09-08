@@ -5,7 +5,7 @@
       - apt-transport-https
       - gpg
       - git
-    state: latest
+    state: present
     update_cache: false
     cache_valid_time: 86400
   tags:
@@ -33,7 +33,7 @@
 - name: Install helm
   ansible.builtin.apt:
     name: helm
-    state: latest
+    state: present
     cache_valid_time: 86400
   # will fail in check mode if db isn't present
   when: not ansible_check_mode
