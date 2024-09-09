@@ -1,27 +1,27 @@
 ---
-- name: install helm prerequisites
-  apt:
+- name: Install helm prerequisites
+  ansible.builtin.apt:
     name:
       - apt-transport-https
       - gpg
       - git
-    state: latest
+    state: present
     update_cache: false
     cache_valid_time: 86400
   tags:
     - helm_packages
     - apt_packages
 
-- name: install heml keyring
+- name: Install heml keyring
   ansible.builtin.get_url:
     url: https://baltocdn.com/helm/signing.asc
     dest: /usr/share/keyrings/helm.asc
-    mode: 0644
+    mode: "0644"
   tags:
     - helm_repostitory
     - helm_repostitory_signature
 
-- name: add heml packages repository
+- name: Add heml packages repository
   ansible.builtin.apt_repository:
     repo: >-
       deb [signed-by=/usr/share/keyrings/helm.asc]
@@ -30,17 +30,17 @@
   tags:
     - helm_repository
 
-- name: install helm
-  apt:
+- name: Install helm
+  ansible.builtin.apt:
     name: helm
-    state: latest
+    state: present
     cache_valid_time: 86400
   # will fail in check mode if db isn't present
   when: not ansible_check_mode
   tags:
     - helm_install
 
-- name: configure bash autompletion for helm for all users
+- name: Configure bash autompletion for helm for all users
   ansible.builtin.template:
     src: helm-bash-autocompletion.j2
     dest: /etc/profile.d/helm.sh

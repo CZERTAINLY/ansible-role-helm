@@ -1,8 +1,8 @@
 ---
-- name: install helm
-  include_tasks: helm.yml
+- name: Install helm
+  ansible.builtin.include_tasks: helm.yml
   tags: helm
 
-- name: install helm
-  include_tasks: helm_diff.yml
+- name: Install helm diff
+  ansible.builtin.include_tasks: helm_diff.yml
   tags: helm, helm_diff
