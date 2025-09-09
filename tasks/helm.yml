@@ -1,4 +1,14 @@
 ---
+- name: Remove abandoned helm packages repository
+  ansible.builtin.apt_repository:
+    repo: >-
+      deb [signed-by=/usr/share/keyrings/helm.asc]
+            https://baltocdn.com/helm/stable/debian/ all main
+    state: absent
+  register: abandoned_helm_repo_removed
+  tags:
+    - helm_repository
+
 - name: Install helm prerequisites
   ansible.builtin.apt:
     name:
@@ -12,20 +22,21 @@
     - helm_packages
     - apt_packages
 
-- name: Install heml keyring
+- name: Install helm keyring
   ansible.builtin.get_url:
-    url: https://baltocdn.com/helm/signing.asc
+    url: https://packages.buildkite.com/helm-linux/helm-debian/gpgkey
     dest: /usr/share/keyrings/helm.asc
     mode: "0644"
+    force: "{{ abandoned_helm_repo_removed.changed | default(false) }}"
   tags:
-    - helm_repostitory
-    - helm_repostitory_signature
+    - helm_repository
+    - helm_repository_signature
 
-- name: Add heml packages repository
+- name: Add helm packages repository
   ansible.builtin.apt_repository:
     repo: >-
       deb [signed-by=/usr/share/keyrings/helm.asc]
-      https://baltocdn.com/helm/stable/debian/ all main
+      https://packages.buildkite.com/helm-linux/helm-debian/any/ any main
     state: present
   tags:
     - helm_repository
