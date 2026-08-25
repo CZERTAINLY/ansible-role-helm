@@ -1,0 +1,10 @@
+# {{ ansible_managed }}
+#
+# Keeps 'apt upgrade' from moving helm to another version, a new major in
+# particular. Priority above 1000 also allows a downgrade back to this
+# version. 'Package: helm' matches only the Kubernetes helm binary package -
+# Debian's own source package of that name builds elpa-helm*, the Emacs
+# framework.
+Package: helm
+Pin: version {{ helm_version }}
+Pin-Priority: 1001
