@@ -11,3 +11,15 @@
 # When set, the version is pinned in /etc/apt/preferences.d/helm.pref as well,
 # otherwise the next "apt upgrade" would undo it.
 helm_version: ""
+
+# Which helm-diff release to install, without the leading "v". Helm 4 verifies
+# plugin signatures, and only the release tarballs carry the .prov file that
+# makes that possible, so the plugin can no longer be installed from the git
+# URL and the version has to be named explicitly.
+helm_diff_version: "3.15.11"
+
+# ansible_architecture to the architecture in the helm-diff release asset
+# names. Only the ones a machine of ours can plausibly run are listed, an
+# unknown architecture is better as a task failure than as a wrong download.
+helm_diff_arch: >-
+  {{ {'x86_64': 'amd64', 'aarch64': 'arm64'}[ansible_architecture] }}

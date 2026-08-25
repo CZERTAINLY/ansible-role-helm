@@ -9,8 +9,43 @@
   changed_when: false
   failed_when: "helm_diff_plugin.rc not in [ 0, 1 ]"
 
+# Helm 4 verifies plugin signatures by default and rejects any source that
+# cannot carry one: installing from the git URL, which is what Helm 3 did,
+# now fails with "plugin source does not support verification". The release
+# tarballs ship a .prov file next to them, so install one of those and keep
+# the verification instead of turning it off with --verify=false.
+- name: Create helm keyring directory
+  ansible.builtin.file:
+    path: /etc/helm
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  when: not ansible_check_mode and helm_diff_plugin.rc != 0
+
+- name: Install helm diff release signing key
+  ansible.builtin.get_url:
+    url: >-
+      https://github.com/databus23/helm-diff/releases/download/v{{ helm_diff_version }}/pubkey.asc
+    dest: /etc/helm/helm-diff-pubkey.asc
+    owner: root
+    group: root
+    mode: '0644'
+  when: not ansible_check_mode and helm_diff_plugin.rc != 0
+
+# helm reads binary OpenPGP keyrings only, the released key is armoured.
+- name: Convert the helm diff signing key into a keyring
+  ansible.builtin.command:
+    cmd: gpg --dearmor --output /etc/helm/helm-diff-keyring.gpg /etc/helm/helm-diff-pubkey.asc
+    creates: /etc/helm/helm-diff-keyring.gpg
+  when: not ansible_check_mode and helm_diff_plugin.rc != 0
+
 - name: Install helm diff
-  ansible.builtin.command: helm plugin install https://github.com/databus23/helm-diff
+  ansible.builtin.command:
+    cmd: >-
+      helm plugin install
+      https://github.com/databus23/helm-diff/releases/download/v{{ helm_diff_version }}/helm-diff-linux-{{ helm_diff_arch | trim }}.tgz
+      --keyring /etc/helm/helm-diff-keyring.gpg
   register: output
   changed_when: output.rc == 0 # install fails when plugin is already installed
   when: not ansible_check_mode and helm_diff_plugin.rc != 0
