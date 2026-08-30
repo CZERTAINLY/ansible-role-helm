@@ -9,6 +9,22 @@
   changed_when: false
   failed_when: "helm_diff_plugin.rc not in [ 0, 1 ]"
 
+# How the plugin has to be installed depends on the major: Helm 4 verifies
+# plugin signatures and only takes the signed release tarball, Helm 3 knows
+# neither the signature nor that URL and only takes the git repository. The
+# role supports both majors, so ask the helm that is actually installed.
+- name: Read the installed helm version
+  ansible.builtin.command:
+    cmd: helm version --short
+  register: helm_version_installed
+  changed_when: false
+  when: not ansible_check_mode and helm_diff_plugin.rc != 0
+
+- name: Determine the installed helm major
+  ansible.builtin.set_fact:
+    helm_major: "{{ helm_version_installed.stdout | regex_search('^v(\\d+)\\.', '\\1') | first | int }}"
+  when: not ansible_check_mode and helm_diff_plugin.rc != 0
+
 # Helm 4 verifies plugin signatures by default and rejects any source that
 # cannot carry one: installing from the git URL, which is what Helm 3 did,
 # now fails with "plugin source does not support verification". The release
@@ -21,7 +37,7 @@
     owner: root
     group: root
     mode: '0755'
-  when: not ansible_check_mode and helm_diff_plugin.rc != 0
+  when: not ansible_check_mode and helm_diff_plugin.rc != 0 and helm_major >= 4
 
 - name: Install helm diff release signing key
   ansible.builtin.get_url:
@@ -31,14 +47,14 @@
     owner: root
     group: root
     mode: '0644'
-  when: not ansible_check_mode and helm_diff_plugin.rc != 0
+  when: not ansible_check_mode and helm_diff_plugin.rc != 0 and helm_major >= 4
 
 # helm reads binary OpenPGP keyrings only, the released key is armoured.
 - name: Convert the helm diff signing key into a keyring
   ansible.builtin.command:
     cmd: gpg --dearmor --output /etc/helm/helm-diff-keyring.gpg /etc/helm/helm-diff-pubkey.asc
     creates: /etc/helm/helm-diff-keyring.gpg
-  when: not ansible_check_mode and helm_diff_plugin.rc != 0
+  when: not ansible_check_mode and helm_diff_plugin.rc != 0 and helm_major >= 4
 
 - name: Install helm diff
   ansible.builtin.command:
@@ -48,4 +64,19 @@
       --keyring /etc/helm/helm-diff-keyring.gpg
   register: output
   changed_when: output.rc == 0 # install fails when plugin is already installed
-  when: not ansible_check_mode and helm_diff_plugin.rc != 0
+  when: not ansible_check_mode and helm_diff_plugin.rc != 0 and helm_major >= 4
+
+# Helm 3 has no --keyring on "plugin install", and it recognises a URL as an
+# archive only when the server announces a gzip content type - a GitHub
+# release asset is served as application/octet-stream, so the tarball URL
+# above ends up in the git installer and fails with "repository not found".
+# The git URL is the one form Helm 3 takes; its install hook then downloads
+# the very same tarball, so --version still decides helm_diff_version.
+- name: Install helm diff (helm 3)
+  ansible.builtin.command:
+    cmd: >-
+      helm plugin install https://github.com/databus23/helm-diff
+      --version v{{ helm_diff_version }}
+  register: output_helm3
+  changed_when: output_helm3.rc == 0 # install fails when plugin is already installed
+  when: not ansible_check_mode and helm_diff_plugin.rc != 0 and helm_major < 4

@@ -34,13 +34,25 @@ final feature release on 2026-09-09 and receives security fixes only until
 2027-02-10.
 
 The role also installs the [helm-diff](https://github.com/databus23/helm-diff)
-plugin. Helm 4 verifies plugin signatures by default and refuses sources that
-cannot carry one, so the git URL that worked under Helm 3 now fails with
-`plugin source does not support verification`. The plugin is therefore
-installed from the signed release tarball of `helm_diff_version`, verified
-against the release signing key, which is fetched to
-`/etc/helm/helm-diff-pubkey.asc` and dearmoured to
-`/etc/helm/helm-diff-keyring.gpg` because helm reads binary keyrings only.
+plugin. How it is installed depends on the major, so the role reads the helm
+that is actually installed and branches on it - neither form works on both.
+
+Helm 4 verifies plugin signatures by default and refuses sources that cannot
+carry one, so the git URL that worked under Helm 3 fails with `plugin source
+does not support verification`. Under Helm 4 the plugin is therefore installed
+from the signed release tarball of `helm_diff_version`, verified against the
+release signing key, which is fetched to `/etc/helm/helm-diff-pubkey.asc` and
+dearmoured to `/etc/helm/helm-diff-keyring.gpg` because helm reads binary
+keyrings only.
+
+Helm 3 has no `--keyring` on `plugin install`, and it recognises a URL as an
+archive only when the server announces a gzip content type - a GitHub release
+asset is served as `application/octet-stream`, so that same tarball URL ends
+up in the git installer and fails with `repository not found`. Under Helm 3
+the plugin is installed from the git URL with `--version v<helm_diff_version>`
+instead; its install hook then downloads the very same tarball, so the version
+is still the one configured, only unverified.
+
 An already installed plugin is left alone, so raising `helm_diff_version` on a
 machine that has the plugin does not move it - uninstall with
 `helm plugin uninstall diff` first.
