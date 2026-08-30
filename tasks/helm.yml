@@ -41,11 +41,40 @@
   tags:
     - helm_repository
 
+# Written before the install so that a version already held by a previous run
+# can't win over a newly configured helm_version. Removed again when
+# helm_version is emptied, otherwise the pin would outlive the decision.
+- name: Pin the helm package version
+  ansible.builtin.template:
+    src: helm.pref.j2
+    dest: /etc/apt/preferences.d/helm.pref
+    owner: root
+    group: root
+    mode: '0644'
+  when: helm_version | length > 0
+  tags:
+    - helm_install
+    - helm_pin
+
+- name: Remove the helm version pin
+  ansible.builtin.file:
+    path: /etc/apt/preferences.d/helm.pref
+    state: absent
+  when: helm_version | length == 0
+  tags:
+    - helm_install
+    - helm_pin
+
+# The repository carries several majors at once, so without helm_version this
+# installs whatever is newest there. allow_downgrade lets a pin move the
+# appliance back, e.g. after a major turned out to be too new for the
+# kubernetes.core collection in use.
 - name: Install helm
   ansible.builtin.apt:
-    name: helm
+    name: "helm{{ ('=' ~ helm_version) if helm_version | length > 0 else '' }}"
     state: present
     cache_valid_time: 86400
+    allow_downgrade: "{{ helm_version | length > 0 }}"
   # will fail in check mode if db isn't present
   when: not ansible_check_mode
   tags:
